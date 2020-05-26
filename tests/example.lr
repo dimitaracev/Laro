@@ -1,0 +1,12 @@
+func meme(x)
+{
+    if(x == 75)
+    {
+
+    }
+}
+
+func main()
+{
+    meme(75)
+}
