@@ -28,6 +28,7 @@ int semantic(ast_node *root)
         snprintf(digit, 2, "%d", root->children[i]->children[0]->children_size);
         insert(dfs->functions, root->children[i]->val, digit);
     }
+    
     char digit[2];
     snprintf(digit, 2, "%d", 1);
     insert(dfs->functions, "print", digit);
@@ -36,6 +37,8 @@ int semantic(ast_node *root)
     {
         function *func = create_function(root->children[i]->val);
         semantic_function(func, root->children[i]);
+        clear_symbol_table(func->st);
+        free(func);
     }
     return 1;
 }

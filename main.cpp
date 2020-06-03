@@ -13,13 +13,13 @@ extern "C"
     #include "src/ast.h" 
     #include "src/generate.h"
     #include "src/semantic.h"
-    extern FILE* yyin;
     extern ast_node* root;
     extern code* mips_code;
     extern declared_functions* dfs;
     extern int current_label_count;
     extern int current_register_count;
     extern int current_temporary_register_count;
+    extern int stack_pointer;
 }
 
 class App : public QApplication
@@ -40,14 +40,14 @@ class App : public QApplication
         err_code = new QTextEdit(window);
         
         run->setText("Run");
-        run->setGeometry(300, 0, 70, 70);
+        run->setGeometry(350, 100, 100, 70);
 
-        source_code->setGeometry(0, 0, 300, 300);
+        source_code->setGeometry(50, 0, 300, 300);
         
-        compiled_code->setGeometry(370, 0, 300, 300);
+        compiled_code->setGeometry(450, 0, 300, 300);
         compiled_code->setReadOnly(true);
 
-        err_code->setGeometry(0, 350, 600, 300);
+        err_code->setGeometry(0, 350, 800, 300);
         err_code->setTextColor(QColor(255, 0, 0));
         err_code->setReadOnly(true);
 
@@ -55,6 +55,7 @@ class App : public QApplication
             current_label_count = 0;
             current_register_count = 0;
             current_temporary_register_count = 0;
+            stack_pointer = 0;
 
             if(root != NULL)
                 clear_nodes(root);
@@ -92,12 +93,17 @@ class App : public QApplication
                 err_code->setText(error_code->inst_code);
             }
         });
+        window->setFixedSize(800, 800);
         window->setWindowTitle("Laro Compiler");
         window->show();
     }
 
     ~App()
     {
+        clear_nodes(root);
+        clear_df(dfs);
+        clear_code(mips_code);
+        clear_code(error_code);
         delete run;
         delete source_code;
         delete err_code;

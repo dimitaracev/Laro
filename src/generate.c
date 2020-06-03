@@ -70,6 +70,8 @@ int generate_code(ast_node *root)
     {
         function *func = create_function(root->children[i]->val);
         generate_function(func, root->children[i]);
+        clear_symbol_table(func->st);
+        free(func);
     }
     generate_print_function();
     return 1;
@@ -91,6 +93,7 @@ int generate_function(function *func, ast_node *node)
         snprintf(instruction, INSTRUCTION_LENGTH, "add %s, $0, $a%d\n", n_temp, i);
         append_code(mips_code, instruction);
         function_insert(func, parameter->val, n_temp);
+        free(n_temp);
     }
     int func_pointer = stack_pointer;
     snprintf(instruction, INSTRUCTION_LENGTH, "sw $ra, %d($sp)\n", stack_pointer);
@@ -217,7 +220,10 @@ int generate_assignment(function *func, ast_node *left, ast_node *right)
         break;
         }
         append_code(mips_code, instruction);
+        free(operand_1);
+        free(operand_2);
     }
+    free(n_reg);
     return 1;
 }
 
@@ -247,11 +253,13 @@ int generate_if_while(function *func, ast_node *condition, ast_node *statements,
             {
                 operand_1 = new_temp();
                 snprintf(instruction, INSTRUCTION_LENGTH, "addi %s, $0, %s\n", operand_1, operand->val);
+                free(operand_1);
             }
             else if (i == 1)
             {
                 operand_2 = new_temp();
                 snprintf(instruction, INSTRUCTION_LENGTH, "addi %s, $0, %s\n", operand_2, operand->val);
+                free(operand_2);
             }
             append_code(mips_code, instruction);
         }
@@ -287,7 +295,6 @@ int generate_if_while(function *func, ast_node *condition, ast_node *statements,
         break;
     case node_ne:
         snprintf(instruction, INSTRUCTION_LENGTH, "beq");
-
         break;
     }
 
@@ -303,10 +310,11 @@ int generate_if_while(function *func, ast_node *condition, ast_node *statements,
     {
         snprintf(instruction, INSTRUCTION_LENGTH, "j %s_start\n", while_label);
         append_code(mips_code, instruction);
+        free(while_label);
     }
-
     snprintf(instruction, INSTRUCTION_LENGTH, "%s:\n", exit_label);
     append_code(mips_code, instruction);
+    free(exit_label);
     return 1;
 }
 
