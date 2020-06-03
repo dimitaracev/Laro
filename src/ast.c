@@ -175,4 +175,5 @@ int clear_nodes(ast_node* node)
     }
     free(node->val);
     free(node);
+    return 1;
 }
