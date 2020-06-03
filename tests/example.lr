@@ -1,12 +1,10 @@
-func meme(x)
-{
-    if(x == 75)
-    {
-
-    }
-}
-
 func main()
 {
-    meme(75)
+    x = 10
+    meme(30, x)
+}
+
+func meme(x, y)
+{
+    x = 30
 }

@@ -7,8 +7,8 @@
 %%
 
 "func"  {   return FUNC;    }
-"("     {   return LPARAN;  }
-")"     {   return RPARAN;  }
+"("     {   return LPAREN;  }
+")"     {   return RPAREN;  }
 "{"     {   return LCURLY;  }
 "}"     {   return RCURLY;  }
 ">="    {   return GE;      }
@@ -19,7 +19,11 @@
 "!="    {   return NE;      }
 "="     {   return EQUALS;  }
 "+"     {   return PLUS;    }
+"-"     {   return MINUS;   }
+"*"     {   return MUL;     }
+"/"     {   return DIV;     }
 "if"    {   return IF;      }
+"while" {   return WHILE;   }
 ","     {   return COMA;    }
 
 [0-9]+                  {

@@ -14,122 +14,136 @@ ast_node *create_ast_node()
     return node;
 }
 
-ast_node *create_operator_name_node(char *name)
+
+ast_node* create_function_node(char* name, ast_node* params, ast_node* statements)
 {
-    ast_node *node = create_ast_node();
-    node->node_type = node_operator_name;
+    ast_node* node = create_ast_node();
+    node->node_type = node_function;
     node->val = strdup(name);
-    return node;
-}
-
-ast_node *create_operator_integer_node(char *integer)
-{
-    ast_node *node = create_ast_node();
-    node->node_type = node_operator_integer;
-    node->val = strdup(integer);
-    return node;
-}
-
-ast_node *create_assignment_node(char *name)
-{
-    ast_node *node = create_ast_node();
-    ast_node *variable = create_ast_node();
-    node->node_type = node_assignment;
-    node->val = strdup("=");
-    variable->node_type = node_variable;
-    variable->val = strdup(name);
     
-    append_child(node, variable);
-    return node;
-}
-
-ast_node *create_statement_node()
-{
-    ast_node *node = create_ast_node();
-    node->node_type = node_statement;
-    return node;
-}
-
-ast_node *create_param_node(char *name)
-{
-    ast_node *node = create_ast_node();
-    node->node_type = node_param;
-    node->val = strdup(name);
-    return node;
-}
-
-ast_node *create_function_definition_node(char *name, ast_node *params, ast_node *statements)
-{
-    ast_node *node = create_ast_node();
-    node->node_type = node_func_definition;
-    node->val = strdup(name);
     append_child(node, params);
     append_child(node, statements);
     return node;
 }
 
-ast_node *create_function_call_node(char *name, ast_node *passing_params)
+ast_node* create_function_call_node(char* name, ast_node* params)
 {
-    ast_node *node = create_ast_node();
-    node->node_type = node_func_call;
+    ast_node* node = create_ast_node();
+    node->node_type = node_function_call;
     node->val = strdup(name);
-    append_child(node, passing_params);
+    
+    append_child(node, params);
     return node;
 }
 
-ast_node *create_passing_param_name_node(char *name)
+
+ast_node* create_assignment_node(ast_node* left, ast_node* right)
 {
-    ast_node *node = create_ast_node();
-    node->node_type = node_passing_name_param;
-    node->val = strdup(name);
+    ast_node* node = create_ast_node();
+    node->node_type = node_assignment;
+    append_child(node, left);
+    append_child(node, right);
     return node;
 }
 
-ast_node *create_passing_param_integer_node(char *name)
+ast_node* create_right_node(ast_node* left, int ant, ast_node* right)
 {
-    ast_node *node = create_ast_node();
-    node->node_type = node_passing_integer_param;
-    node->val = strdup(name);
+    ast_node* node = create_ast_node();
+    node->node_type = ant;
+    append_child(node, left);
+    append_child(node, right);
     return node;
 }
 
-ast_node *create_params_node()
+ast_node* create_if_node(ast_node* condition, ast_node* statements)
 {
-    ast_node *node = create_ast_node();
-    node->node_type = node_params;
-    return node;
-}
-
-ast_node *create_passing_params_node()
-{
-    ast_node *node = create_ast_node();
-    node->node_type = node_passing_params;
-    return node;
-}
-
-ast_node *create_if_node(ast_node *condition, ast_node *statements)
-{
-    ast_node *node = create_ast_node();
+    ast_node* node = create_ast_node();
     node->node_type = node_if;
     append_child(node, condition);
     append_child(node, statements);
     return node;
 }
 
-ast_node *create_while_node(ast_node *condition, ast_node *statements)
+ast_node* create_while_node(ast_node* condition, ast_node* statements)
 {
-    ast_node *node = create_ast_node();
+    ast_node* node = create_ast_node();
     node->node_type = node_while;
     append_child(node, condition);
     append_child(node, statements);
     return node;
 }
 
-ast_node *create_bool_operation_node(char *op, ast_node *left, ast_node *right)
+
+ast_node* create_statements_node(ast_node* first)
 {
-    ast_node *node = create_ast_node();
-    node->node_type = node_bool_operation;
-    node->val = strdup(op);
+    ast_node* node = create_ast_node();
+    node->node_type = node_statements;
+    append_child(node, first);
+    return node;
+}
+
+ast_node* create_identifier_name_node(char* name)
+{
+    ast_node* node = create_ast_node();
+    node->node_type = node_name;
+    node->val = strdup(name);
+    return node;
+}
+
+ast_node* create_identifier_integer_node(char* integer)
+{
+    ast_node* node = create_ast_node();
+    node->node_type = node_integer;
+    node->val = strdup(integer);
+    return node;
+}
+
+
+ast_node* create_gt_node(ast_node* left, ast_node* right)
+{
+    ast_node* node = create_ast_node();
+    node->node_type = node_gt;
+    append_child(node, left);
+    append_child(node, right);
+    return node;
+}
+
+ast_node* create_ge_node(ast_node* left, ast_node* right)
+{
+    ast_node* node = create_ast_node();
+    node->node_type = node_ge;
+    append_child(node, left);
+    append_child(node, right);
+    return node;
+}
+ast_node* create_lt_node(ast_node* left, ast_node* right)
+{
+    ast_node* node = create_ast_node();
+    node->node_type = node_lt;
+    append_child(node, left);
+    append_child(node, right);
+    return node;
+}
+ast_node* create_le_node(ast_node* left, ast_node* right)
+{
+    ast_node* node = create_ast_node();
+    node->node_type = node_le;
+    append_child(node, left);
+    append_child(node, right);
+    return node;
+}
+ast_node* create_ee_node(ast_node* left, ast_node* right)
+{
+    ast_node* node = create_ast_node();
+    node->node_type = node_ee;
+    append_child(node, left);
+    append_child(node, right);
+    return node;
+}
+ast_node* create_ne_node(ast_node* left, ast_node* right)
+{
+    ast_node* node = create_ast_node();
+    node->node_type = node_ne;
     append_child(node, left);
     append_child(node, right);
     return node;
@@ -150,16 +164,15 @@ int append_child(ast_node *parent, ast_node *child)
         return 0;
 }
 
-void print_ast(ast_node *root)
+int clear_nodes(ast_node* node)
 {
-    if (root == NULL)
-        return;
-
-    if (root->val)
-        printf("%s\n", root->val);
-
-    for (int i = 0; i < root->children_size; i++)
+    if(node == NULL)
+        return -1;
+    
+    for(int i = 0; i < node->children_size; i++)
     {
-        print_ast(root->children[i]);
+        clear_nodes(node->children[i]);
     }
+    free(node->val);
+    free(node);
 }

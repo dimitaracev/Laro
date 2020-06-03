@@ -11,39 +11,35 @@ symbol_table *create_symbol_table()
     return st;
 }
 
-int hash_code(char *key)
+int clear_symbol_table(symbol_table* st)
 {
-    if (key == NULL)
-        return -1;
-    int hs = 0;
-    int power = 1;
-    for (int i = 0; i < strlen(key); i++)
+    for(int i = 0; i < st->size; i++)
     {
-        hs += power * key[i];
-        power *= 10;
+        free(st->symbols[i]);
     }
-    return (hs * strlen(key)) % CAPACITY;
+    free(st);
 }
 
-int insert(symbol_table *st, char *key, ast_node* node)
+int insert(symbol_table *st, char *key, char* value)
 {
     if (st == NULL || key == NULL)
         return -1;
 
     symbol *s = (symbol *)malloc(sizeof(symbol));
     s->key = strdup(key);
-    s->value = node;
-    int hs = hash_code(key);
-    st->symbols[hs] = s;
-    if (st->symbols[hs] != NULL){
-        st->size++;
-        return 1;
-    }
-    return 0;
+    s->value = strdup(value);
+    st->symbols[st->size++] = s;
+    return 1;
 }
 
 symbol *lookup(symbol_table *st, char *key)
 {
-    int hs = hash_code(key);
-    return st->symbols[hs];
+    for(int i = 0; i < st->size; i++)
+    {
+        if(strcmp(st->symbols[i]->key, key) == 0)
+        {
+            return st->symbols[i];
+        }
+    }
+    return NULL;
 }

@@ -3,14 +3,14 @@
 
 #include "ast.h"
 
-#define CAPACITY 500
+#define CAPACITY 101
 
 
 
 struct symbol
 {
     char *key;
-    ast_node* value;
+    char* value;
 };
 
 typedef struct symbol symbol;
@@ -25,9 +25,9 @@ typedef struct symbol_table symbol_table;
 
 symbol_table *create_symbol_table();
 
-int hash_code(char *);
+int clear_symbol_table(symbol_table*);
 
-int insert(symbol_table *, char *, ast_node*);
+int insert(symbol_table *, char *, char *);
 
 symbol *lookup(symbol_table *, char *);
 
