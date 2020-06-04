@@ -216,14 +216,15 @@ int generate_assignment(function *func, ast_node *left, ast_node *right)
             append_code(mips_code, instruction);
             snprintf(instruction, INSTRUCTION_LENGTH, "mflo %s\n", n_reg);
             break;
+        case node_mod:
+            snprintf(instruction, INSTRUCTION_LENGTH, "div %s, %s\n", operand_1, operand_2);
+            append_code(mips_code, instruction);
+            snprintf(instruction, INSTRUCTION_LENGTH, "mfhi %s\n", n_reg);
         default:
         break;
         }
         append_code(mips_code, instruction);
-        free(operand_1);
-        free(operand_2);
     }
-    free(n_reg);
     return 1;
 }
 
@@ -253,13 +254,11 @@ int generate_if_while(function *func, ast_node *condition, ast_node *statements,
             {
                 operand_1 = new_temp();
                 snprintf(instruction, INSTRUCTION_LENGTH, "addi %s, $0, %s\n", operand_1, operand->val);
-                free(operand_1);
             }
             else if (i == 1)
             {
                 operand_2 = new_temp();
                 snprintf(instruction, INSTRUCTION_LENGTH, "addi %s, $0, %s\n", operand_2, operand->val);
-                free(operand_2);
             }
             append_code(mips_code, instruction);
         }
@@ -279,16 +278,16 @@ int generate_if_while(function *func, ast_node *condition, ast_node *statements,
     switch (condition->node_type)
     {
     case node_gt:
-        snprintf(instruction, INSTRUCTION_LENGTH, "blt");
-        break;
-    case node_ge:
         snprintf(instruction, INSTRUCTION_LENGTH, "ble");
         break;
+    case node_ge:
+        snprintf(instruction, INSTRUCTION_LENGTH, "blt");
+        break;
     case node_lt:
-        snprintf(instruction, INSTRUCTION_LENGTH, "bgt");
+        snprintf(instruction, INSTRUCTION_LENGTH, "bge");
         break;
     case node_le:
-        snprintf(instruction, INSTRUCTION_LENGTH, "bge");
+        snprintf(instruction, INSTRUCTION_LENGTH, "bgt");
         break;
     case node_ee:
         snprintf(instruction, INSTRUCTION_LENGTH, "bne");

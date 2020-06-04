@@ -65,11 +65,12 @@ extern int yydebug;
     MINUS = 271,
     MUL = 272,
     DIV = 273,
-    IF = 274,
-    WHILE = 275,
-    COMA = 276,
-    NAME = 277,
-    INTEGER = 278
+    MOD = 274,
+    IF = 275,
+    WHILE = 276,
+    COMA = 277,
+    NAME = 278,
+    INTEGER = 279
   };
 #endif
 /* Tokens.  */
@@ -89,25 +90,26 @@ extern int yydebug;
 #define MINUS 271
 #define MUL 272
 #define DIV 273
-#define IF 274
-#define WHILE 275
-#define COMA 276
-#define NAME 277
-#define INTEGER 278
+#define MOD 274
+#define IF 275
+#define WHILE 276
+#define COMA 277
+#define NAME 278
+#define INTEGER 279
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 
 union YYSTYPE
 {
-#line 9 "src/parser.y" /* yacc.c:1921  */
+#line 11 "src/parser.y" /* yacc.c:1921  */
 
     char* name;
     char* integer;
     struct ast_node* node;
     int type;
 
-#line 111 "y.tab.h" /* yacc.c:1921  */
+#line 113 "y.tab.h" /* yacc.c:1921  */
 };
 
 typedef union YYSTYPE YYSTYPE;

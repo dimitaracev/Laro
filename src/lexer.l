@@ -22,6 +22,7 @@
 "-"     {   return MINUS;   }
 "*"     {   return MUL;     }
 "/"     {   return DIV;     }
+"%"     {   return MOD;     }
 "if"    {   return IF;      }
 "while" {   return WHILE;   }
 ","     {   return COMA;    }

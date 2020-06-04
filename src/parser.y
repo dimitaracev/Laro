@@ -14,7 +14,7 @@
     struct ast_node* node;
     int type;
 }
-%token LPAREN RPAREN LCURLY RCURLY FUNC GE GT LE LT EE NE EQUALS PLUS MINUS MUL DIV IF WHILE COMA
+%token LPAREN RPAREN LCURLY RCURLY FUNC GE GT LE LT EE NE EQUALS PLUS MINUS MUL DIV MOD IF WHILE COMA
 
 %type <node> function function_call block_statements statement param params condition identifier if while assignment variable argument arguments
 %token <name> NAME
@@ -49,6 +49,9 @@ operator
                                         }
     |   DIV                             {
                                             $$ = node_div;
+                                        }
+    |   MOD                             {
+                                            $$ = node_mod;
                                         }
     ;
 

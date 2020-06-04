@@ -5,7 +5,7 @@ enum ast_node_type {
     node_null, node_function, node_function_call, node_if, node_while, 
     node_gt, node_ge, node_lt, node_le, node_ee, node_ne,
     node_name, node_integer,
-    node_plus, node_minus, node_mul, node_div, node_assignment, 
+    node_plus, node_minus, node_mul, node_div, node_mod, node_assignment, 
     node_statements
 };
 
