@@ -22,13 +22,26 @@ int semantic(ast_node *root)
     if (root == NULL)
         return -1;
 
-    for (int i = 1; i < root->children_size; i++)
+    int main_found = 0;
+    for (int i = 0; i < root->children_size; i++)
     {
-        char digit[2];
-        snprintf(digit, 2, "%d", root->children[i]->children[0]->children_size);
-        insert(dfs->functions, root->children[i]->val, digit);
+        if(strcmp(root->children[i]->val, "main") == 0)
+            main_found = 1;
+        else
+        {
+            char digit[2];
+            snprintf(digit, 2, "%d", root->children[i]->children[0]->children_size);
+            insert(dfs->functions, root->children[i]->val, digit);
+        }
     }
     
+    if(!main_found)
+    {
+        char instruction[INSTRUCTION_LENGTH];
+        snprintf(instruction, INSTRUCTION_LENGTH, "Main function not found.\n");
+        append_code(error_code, instruction);
+    }
+
     char digit[2];
     snprintf(digit, 2, "%d", 1);
     insert(dfs->functions, "print", digit);

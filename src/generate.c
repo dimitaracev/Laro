@@ -44,17 +44,19 @@ code *new_code()
     return n_code;
 }
 
-int append_code(code* s_code, char *instruction)
+int append_code(code *s_code, char *instruction)
 {
     s_code->characters = s_code->characters + INSTRUCTION_LENGTH;
     s_code->inst_code = (char *)realloc(s_code->inst_code, s_code->characters + 1);
     strncat(s_code->inst_code, instruction, INSTRUCTION_LENGTH);
+    return 1;
 }
 
-int clear_code(code* s_code)
+int clear_code(code *s_code)
 {
     free(s_code->inst_code);
     free(s_code);
+    return 1;
 }
 
 int generate_code(ast_node *root)
@@ -86,10 +88,10 @@ int generate_function(function *func, ast_node *node)
     snprintf(instruction, INSTRUCTION_LENGTH, "%s:\n", node->val);
     append_code(mips_code, instruction);
 
-    for(int i = 0; i < node->children[0]->children_size; i++)
+    for (int i = 0; i < node->children[0]->children_size; i++)
     {
-        ast_node* parameter = node->children[0]->children[i];
-        char* n_temp = new_temp();
+        ast_node *parameter = node->children[0]->children[i];
+        char *n_temp = new_temp();
         snprintf(instruction, INSTRUCTION_LENGTH, "add %s, $0, $a%d\n", n_temp, i);
         append_code(mips_code, instruction);
         function_insert(func, parameter->val, n_temp);
@@ -103,9 +105,7 @@ int generate_function(function *func, ast_node *node)
     {
         generate_statement(func, node->children[1]->children[i]);
     }
-    snprintf(instruction, INSTRUCTION_LENGTH, "lw $ra, %d($sp)\n", func_pointer);
-    append_code(mips_code, instruction);
-    snprintf(instruction, INSTRUCTION_LENGTH, "jr $ra\n");
+    snprintf(instruction, INSTRUCTION_LENGTH, "lw $ra, %d($sp)\njr $ra\n", func_pointer);
     append_code(mips_code, instruction);
     return 1;
 }
@@ -127,10 +127,10 @@ int generate_statement(function *func, ast_node *node)
         return 1;
         break;
     case node_function_call:
-            generate_function_call(func, node);
+        generate_function_call(func, node);
         break;
     default:
-    break;
+        break;
     }
     for (int i = 0; i < node->children_size; i++)
     {
@@ -143,11 +143,13 @@ int generate_assignment(function *func, ast_node *left, ast_node *right)
 {
     char instruction[INSTRUCTION_LENGTH];
     symbol *symb = function_lookup(func, left->val);
-    char *n_reg;
+    char *n_reg = NULL;
+    int new_reg = 0;
     if (symb == NULL)
     {
         n_reg = new_register();
         function_insert(func, left->val, n_reg);
+        new_reg = 1;
     }
     else
     {
@@ -170,33 +172,36 @@ int generate_assignment(function *func, ast_node *left, ast_node *right)
     }
     else if (right->children_size == 2)
     {
-        char* operand_1;
-        char*  operand_2;
-        for(int i = 0; i < right->children_size; i++)
+        char *operand_1 = NULL;
+        char *operand_2 = NULL;
+        for (int i = 0; i < right->children_size; i++)
         {
             ast_node *operand = right->children[i];
-        if (operand->node_type == node_name)
-        {
-            symbol *r_symb = function_lookup(func, operand->val);
-            if (i == 0)
-                operand_1 = r_symb->value;
-            else if (i == 1)
-                operand_2 = r_symb->value;
-        }
-        else if (operand->node_type == node_integer)
-        {
-            if (i == 0)
+            if (operand->node_type == node_name)
             {
-                operand_1 = new_temp();
-                snprintf(instruction, INSTRUCTION_LENGTH, "addi %s, $0, %s\n", operand_1, operand->val);
+                symbol *r_symb = function_lookup(func, operand->val);
+                if (i == 0)
+                    operand_1 = r_symb->value;
+                else if (i == 1)
+                    operand_2 = r_symb->value;
             }
-            else if (i == 1)
+            else if (operand->node_type == node_integer)
             {
-                operand_2 = new_temp();
-                snprintf(instruction, INSTRUCTION_LENGTH, "addi %s, $0, %s\n", operand_2, operand->val);
+                if (i == 0)
+                {
+                    operand_1 = new_temp();
+                    snprintf(instruction, INSTRUCTION_LENGTH, "addi %s, $0, %s\n", operand_1, operand->val);
+                    append_code(mips_code, instruction);
+                    free(operand_1);
+                }
+                else if (i == 1)
+                {
+                    operand_2 = new_temp();
+                    snprintf(instruction, INSTRUCTION_LENGTH, "addi %s, $0, %s\n", operand_2, operand->val);
+                    append_code(mips_code, instruction);
+                    free(operand_2);
+                }
             }
-            append_code(mips_code, instruction);
-        }
         }
         switch (right->node_type)
         {
@@ -204,7 +209,7 @@ int generate_assignment(function *func, ast_node *left, ast_node *right)
             snprintf(instruction, INSTRUCTION_LENGTH, "add %s, %s, %s\n", n_reg, operand_1, operand_2);
             break;
         case node_minus:
-            snprintf(instruction, INSTRUCTION_LENGTH, "add %s, %s, %s\n", n_reg, operand_1, operand_2);
+            snprintf(instruction, INSTRUCTION_LENGTH, "sub %s, %s, %s\n", n_reg, operand_1, operand_2);
             break;
         case node_mul:
             snprintf(instruction, INSTRUCTION_LENGTH, "mult %s, %s\n", operand_1, operand_2);
@@ -221,10 +226,12 @@ int generate_assignment(function *func, ast_node *left, ast_node *right)
             append_code(mips_code, instruction);
             snprintf(instruction, INSTRUCTION_LENGTH, "mfhi %s\n", n_reg);
         default:
-        break;
+            break;
         }
         append_code(mips_code, instruction);
     }
+    if (new_reg)
+        free(n_reg);
     return 1;
 }
 
@@ -235,8 +242,8 @@ int generate_if_while(function *func, ast_node *condition, ast_node *statements,
 
     char instruction[INSTRUCTION_LENGTH];
 
-    char *operand_1;
-    char *operand_2;
+    char *operand_1 = NULL;
+    char *operand_2 = NULL;
     for (int i = 0; i < condition->children_size; i++)
     {
         ast_node *operand = condition->children[i];
@@ -254,13 +261,16 @@ int generate_if_while(function *func, ast_node *condition, ast_node *statements,
             {
                 operand_1 = new_temp();
                 snprintf(instruction, INSTRUCTION_LENGTH, "addi %s, $0, %s\n", operand_1, operand->val);
+                append_code(mips_code, instruction);
+                free(operand_1);
             }
             else if (i == 1)
             {
                 operand_2 = new_temp();
                 snprintf(instruction, INSTRUCTION_LENGTH, "addi %s, $0, %s\n", operand_2, operand->val);
+                append_code(mips_code, instruction);
+                free(operand_2);
             }
-            append_code(mips_code, instruction);
         }
     }
 
@@ -295,6 +305,8 @@ int generate_if_while(function *func, ast_node *condition, ast_node *statements,
     case node_ne:
         snprintf(instruction, INSTRUCTION_LENGTH, "beq");
         break;
+    default:
+        break;
     }
 
     append_code(mips_code, instruction);
@@ -317,18 +329,18 @@ int generate_if_while(function *func, ast_node *condition, ast_node *statements,
     return 1;
 }
 
-int generate_function_call(function* func, ast_node* func_call)
+int generate_function_call(function *func, ast_node *func_call)
 {
     char instruction[INSTRUCTION_LENGTH];
-    for(int i = 0; i < func_call->children[0]->children_size; i++)
+    for (int i = 0; i < func_call->children[0]->children_size; i++)
     {
-        ast_node* argument = func_call->children[0]->children[i];
-        if(argument->node_type == node_name)
+        ast_node *argument = func_call->children[0]->children[i];
+        if (argument->node_type == node_name)
         {
-            symbol* symb = function_lookup(func, argument->val);
+            symbol *symb = function_lookup(func, argument->val);
             snprintf(instruction, INSTRUCTION_LENGTH, "add $a%d, $0, %s\n", i, symb->value);
         }
-        else if(argument->node_type == node_integer)
+        else if (argument->node_type == node_integer)
         {
             snprintf(instruction, INSTRUCTION_LENGTH, "addi $a%d, $0, %s\n", i, argument->val);
         }

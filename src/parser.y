@@ -2,8 +2,10 @@
     #include <stdio.h>
     #include <string.h>
     #include "src/ast.h"
+    #include "src/generate.h"
     ast_node* root;
     extern char* yytext;
+    extern code* error_code;
     extern int yyparse();
     void yyerror(char*);
 %}
@@ -205,5 +207,5 @@ function_call
 
 void yyerror(char* error)
 {
-    fprintf(stderr, "%s <- %s\n", yytext, error);
+    
 }
