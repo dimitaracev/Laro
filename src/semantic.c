@@ -15,6 +15,7 @@ int clear_df(declared_functions *df)
 {
     clear_symbol_table(df->functions);
     free(df);
+    return 1;
 }
 
 int semantic(ast_node *root)
@@ -25,7 +26,7 @@ int semantic(ast_node *root)
     int main_found = 0;
     for (int i = 0; i < root->children_size; i++)
     {
-        if(strcmp(root->children[i]->val, "main") == 0)
+        if (strcmp(root->children[i]->val, "main") == 0)
             main_found = 1;
         else
         {
@@ -34,8 +35,8 @@ int semantic(ast_node *root)
             insert(dfs->functions, root->children[i]->val, digit);
         }
     }
-    
-    if(!main_found)
+
+    if (!main_found)
     {
         char instruction[INSTRUCTION_LENGTH];
         snprintf(instruction, INSTRUCTION_LENGTH, "Main function not found.\n");
@@ -75,6 +76,8 @@ int semantic_function(function *func, ast_node *node)
         {
             function_insert(func, node->children[0]->children[i]->val, "");
         }
+        break;
+    default:
         break;
     }
     for (int i = 0; i < node->children_size; i++)

@@ -14,7 +14,7 @@ char *new_register()
 {
     char *n_register = (char *)malloc(sizeof(char) * REGISTER_LENGTH);
     snprintf(n_register, REGISTER_LENGTH, "$s%d", current_register_count++);
-    if (current_register_count >= MAX_REGISTER_COUNT)
+    if (current_register_count > MAX_REGISTER_COUNT)
         current_register_count = 0;
     return n_register;
 }
@@ -23,7 +23,7 @@ char *new_temp()
 {
     char *n_temp = (char *)malloc(sizeof(char) * REGISTER_LENGTH);
     snprintf(n_temp, REGISTER_LENGTH, "$t%d", current_temporary_register_count++);
-    if (current_temporary_register_count >= MAX_TEMPORARY_REGISTER_COUNT)
+    if (current_temporary_register_count > MAX_TEMPORARY_REGISTER_COUNT)
         current_temporary_register_count = 0;
     return n_temp;
 }
@@ -98,6 +98,8 @@ int generate_function(function *func, ast_node *node)
         free(n_temp);
     }
     int func_pointer = stack_pointer;
+    snprintf(instruction, INSTRUCTION_LENGTH, "addi $sp, $sp, -4\n");
+    append_code(mips_code, instruction);
     snprintf(instruction, INSTRUCTION_LENGTH, "sw $ra, %d($sp)\n", stack_pointer);
     append_code(mips_code, instruction);
     stack_pointer += 4;
@@ -105,8 +107,11 @@ int generate_function(function *func, ast_node *node)
     {
         generate_statement(func, node->children[1]->children[i]);
     }
-    snprintf(instruction, INSTRUCTION_LENGTH, "lw $ra, %d($sp)\njr $ra\n", func_pointer);
+    snprintf(instruction, INSTRUCTION_LENGTH, "lw $ra, %d($sp)\n", func_pointer);
     append_code(mips_code, instruction);
+    snprintf(instruction, INSTRUCTION_LENGTH, "addi $sp, $sp, 4\njr $ra\n");
+    append_code(mips_code, instruction);
+    stack_pointer -= 4;
     return 1;
 }
 
@@ -174,6 +179,8 @@ int generate_assignment(function *func, ast_node *left, ast_node *right)
     {
         char *operand_1 = NULL;
         char *operand_2 = NULL;
+        int n_op1 = 0;
+        int n_op2 = 0;
         for (int i = 0; i < right->children_size; i++)
         {
             ast_node *operand = right->children[i];
@@ -192,14 +199,14 @@ int generate_assignment(function *func, ast_node *left, ast_node *right)
                     operand_1 = new_temp();
                     snprintf(instruction, INSTRUCTION_LENGTH, "addi %s, $0, %s\n", operand_1, operand->val);
                     append_code(mips_code, instruction);
-                    free(operand_1);
+                    n_op1 = 1;
                 }
                 else if (i == 1)
                 {
                     operand_2 = new_temp();
                     snprintf(instruction, INSTRUCTION_LENGTH, "addi %s, $0, %s\n", operand_2, operand->val);
                     append_code(mips_code, instruction);
-                    free(operand_2);
+                    n_op2 = 1;
                 }
             }
         }
@@ -229,6 +236,12 @@ int generate_assignment(function *func, ast_node *left, ast_node *right)
             break;
         }
         append_code(mips_code, instruction);
+
+        if (n_op1)
+            free(operand_1);
+
+        if (n_op2)
+            free(operand_2);
     }
     if (new_reg)
         free(n_reg);
@@ -244,6 +257,8 @@ int generate_if_while(function *func, ast_node *condition, ast_node *statements,
 
     char *operand_1 = NULL;
     char *operand_2 = NULL;
+    int n_op1 = 0;
+    int n_op2 = 0;
     for (int i = 0; i < condition->children_size; i++)
     {
         ast_node *operand = condition->children[i];
@@ -262,14 +277,14 @@ int generate_if_while(function *func, ast_node *condition, ast_node *statements,
                 operand_1 = new_temp();
                 snprintf(instruction, INSTRUCTION_LENGTH, "addi %s, $0, %s\n", operand_1, operand->val);
                 append_code(mips_code, instruction);
-                free(operand_1);
+                n_op1 = 1;
             }
             else if (i == 1)
             {
                 operand_2 = new_temp();
                 snprintf(instruction, INSTRUCTION_LENGTH, "addi %s, $0, %s\n", operand_2, operand->val);
                 append_code(mips_code, instruction);
-                free(operand_2);
+                n_op2 = 1;
             }
         }
     }
@@ -313,6 +328,12 @@ int generate_if_while(function *func, ast_node *condition, ast_node *statements,
     snprintf(instruction, INSTRUCTION_LENGTH, " %s, %s, %s\n", operand_1, operand_2, exit_label);
     append_code(mips_code, instruction);
 
+    if (n_op1)
+        free(operand_1);
+
+    if (n_op2)
+        free(operand_2);
+
     for (int i = 0; i < statements->children_size; i++)
     {
         generate_statement(func, statements->children[i]);
@@ -325,6 +346,7 @@ int generate_if_while(function *func, ast_node *condition, ast_node *statements,
     }
     snprintf(instruction, INSTRUCTION_LENGTH, "%s:\n", exit_label);
     append_code(mips_code, instruction);
+
     free(exit_label);
     return 1;
 }
