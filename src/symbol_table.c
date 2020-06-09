@@ -18,6 +18,7 @@ int clear_symbol_table(symbol_table* st)
         free(st->symbols[i]);
     }
     free(st);
+    return 1;
 }
 
 int insert(symbol_table *st, char *key, char* value)

@@ -24,6 +24,7 @@
 "/"     {   return DIV;     }
 "%"     {   return MOD;     }
 "if"    {   return IF;      }
+"else"  {   return ELSE;    }
 "while" {   return WHILE;   }
 ","     {   return COMA;    }
 

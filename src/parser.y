@@ -16,9 +16,9 @@
     struct ast_node* node;
     int type;
 }
-%token LPAREN RPAREN LCURLY RCURLY FUNC GE GT LE LT EE NE EQUALS PLUS MINUS MUL DIV MOD IF WHILE COMA
+%token LPAREN RPAREN LCURLY RCURLY FUNC GE GT LE LT EE NE EQUALS PLUS MINUS MUL DIV MOD IF ELSE WHILE COMA
 
-%type <node> function function_call block_statements statement param params condition identifier if while assignment variable argument arguments
+%type <node> function function_call block_statements statement param params condition identifier if if_else while assignment variable argument arguments
 %token <name> NAME
 %token <integer> INTEGER
 %type <type> operator
@@ -90,6 +90,9 @@ statement
     |   if                                                      {
                                                                     $$ = $1;
                                                                 }
+    |   if_else                                                 {
+                                                                    $$ = $1;
+                                                                }
     |   while                                                   {
                                                                     $$ = $1;
                                                                 }
@@ -123,7 +126,7 @@ condition
                                                                         $$ = create_lt_node($1, $3);
                                                                     }
     |   identifier LE identifier                                    {
-                                                                        $$ = create_ge_node($1, $3);
+                                                                        $$ = create_le_node($1, $3);
                                                                     }
     |   identifier EE identifier                                    {
                                                                         $$ = create_ee_node($1, $3);
@@ -137,6 +140,11 @@ if
     :   IF LPAREN condition RPAREN LCURLY block_statements RCURLY       {
                                                                             $$ = create_if_node($3, $6);
                                                                         }
+    ;
+if_else
+    :   IF LPAREN condition RPAREN LCURLY block_statements RCURLY ELSE LCURLY block_statements RCURLY   {
+                                                                                                            $$ = create_if_else_node($3, $6, $10);
+                                                                                                        }
     ;
 
 while
@@ -207,5 +215,5 @@ function_call
 
 void yyerror(char* error)
 {
-    
+    fprintf(stderr, "%s <- %s\n", yytext, error);
 }

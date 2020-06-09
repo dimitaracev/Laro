@@ -31,7 +31,6 @@ ast_node* create_function_call_node(char* name, ast_node* params)
     ast_node* node = create_ast_node();
     node->node_type = node_function_call;
     node->val = strdup(name);
-    
     append_child(node, params);
     return node;
 }
@@ -61,6 +60,16 @@ ast_node* create_if_node(ast_node* condition, ast_node* statements)
     node->node_type = node_if;
     append_child(node, condition);
     append_child(node, statements);
+    return node;
+}
+
+ast_node* create_if_else_node(ast_node* condition, ast_node* if_statements, ast_node* else_statements)
+{
+    ast_node* node = create_ast_node();
+    node->node_type = node_if_else;
+    append_child(node, condition);
+    append_child(node, if_statements);
+    append_child(node, else_statements);
     return node;
 }
 

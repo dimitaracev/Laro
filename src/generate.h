@@ -8,7 +8,7 @@
 #define MAX_TEMPORARY_REGISTER_COUNT 10
 #define REGISTER_LENGTH 10
 #define LABEL_LENGTH 10
-#define INSTRUCTION_LENGTH 60
+#define INSTRUCTION_LENGTH 80
 
 struct code
 {
@@ -34,6 +34,7 @@ int generate_function(function*, ast_node*);
 int generate_statement(function*, ast_node*);
 int generate_assignment(function*, ast_node*, ast_node*);
 int generate_if_while(function*, ast_node*, ast_node*, int);
+int generate_if_else(function*, ast_node*, ast_node*, ast_node*);
 int generate_function_call(function*, ast_node*);
 
 int generate_print_function();
