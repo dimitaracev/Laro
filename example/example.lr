@@ -1,0 +1,13 @@
+func main()
+{
+    x = 0
+    while(x < 100)
+    {
+        mod = x % 2
+        if(mod == 0)
+        {
+            print(x)
+        }
+        x = x + 1
+    }
+}
