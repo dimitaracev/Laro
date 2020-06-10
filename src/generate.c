@@ -7,8 +7,9 @@
 int current_register_count = 0;
 int current_temporary_register_count = 0;
 int current_label_count = 0;
-
 int stack_pointer = 0;
+
+char instruction[INSTRUCTION_LENGTH];
 
 char *new_register()
 {
@@ -64,7 +65,6 @@ int generate_code(ast_node *root)
     if (root == NULL)
         return -1;
 
-    char instruction[INSTRUCTION_LENGTH];
     snprintf(instruction, INSTRUCTION_LENGTH, ".text\njal main\nli $v0, 10\nsyscall\n");
     append_code(mips_code, instruction);
 
@@ -84,7 +84,6 @@ int generate_function(function *func, ast_node *node)
     if (node == NULL)
         return 1;
 
-    char instruction[INSTRUCTION_LENGTH];
     snprintf(instruction, INSTRUCTION_LENGTH, "%s:\n", node->val);
     append_code(mips_code, instruction);
 
@@ -97,20 +96,28 @@ int generate_function(function *func, ast_node *node)
         function_insert(func, parameter->val, n_temp);
         free(n_temp);
     }
+
     int func_pointer = stack_pointer;
+    
     snprintf(instruction, INSTRUCTION_LENGTH, "addi $sp, $sp, -4\n");
     append_code(mips_code, instruction);
+    
     snprintf(instruction, INSTRUCTION_LENGTH, "sw $ra, %d($sp)\n", stack_pointer);
     append_code(mips_code, instruction);
+    
     stack_pointer += 4;
+
     for (int i = 0; i < node->children[1]->children_size; i++)
     {
         generate_statement(func, node->children[1]->children[i]);
     }
+    
     snprintf(instruction, INSTRUCTION_LENGTH, "lw $ra, %d($sp)\n", func_pointer);
     append_code(mips_code, instruction);
+    
     snprintf(instruction, INSTRUCTION_LENGTH, "addi $sp, $sp, 4\njr $ra\n");
     append_code(mips_code, instruction);
+    
     stack_pointer -= 4;
     return 1;
 }
@@ -127,8 +134,10 @@ int generate_statement(function *func, ast_node *node)
         return 1;
         break;
     case node_if:
+        generate_if(func, node->children[0], node->children[1]);
+        return 1;
     case node_while:
-        generate_if_while(func, node->children[0], node->children[1], node->node_type);
+        generate_while(func, node->children[0], node->children[1]);
         return 1;
         break;
     case node_if_else:
@@ -148,21 +157,51 @@ int generate_statement(function *func, ast_node *node)
     return 1;
 }
 
+operands *get_operands(function *func, ast_node *node)
+{
+    operands *ops = (operands *)malloc(sizeof(operands));
+    for (int i = 0; i < node->children_size; i++)
+    {
+        ast_node *operand = node->children[i];
+        if (operand->node_type == node_name)
+        {
+            symbol *r_symb = function_lookup(func, operand->val);
+            if (i == 0)
+                ops->operand_1 = strdup(r_symb->value);
+            else if (i == 1)
+                ops->operand_2 = strdup(r_symb->value);
+        }
+        else if (operand->node_type == node_integer)
+        {
+            if (i == 0)
+            {
+                ops->operand_1 = new_temp();
+                snprintf(instruction, INSTRUCTION_LENGTH, "addi %s, $0, %s\n", ops->operand_1, operand->val);
+                append_code(mips_code, instruction);
+            }
+            else if (i == 1)
+            {
+                ops->operand_2 = new_temp();
+                snprintf(instruction, INSTRUCTION_LENGTH, "addi %s, $0, %s\n", ops->operand_2, operand->val);
+                append_code(mips_code, instruction);
+            }
+        }
+    }
+    return ops;
+}
+
 int generate_assignment(function *func, ast_node *left, ast_node *right)
 {
-    char instruction[INSTRUCTION_LENGTH];
     symbol *symb = function_lookup(func, left->val);
     char *n_reg = NULL;
-    int new_reg = 0;
     if (symb == NULL)
     {
         n_reg = new_register();
         function_insert(func, left->val, n_reg);
-        new_reg = 1;
     }
     else
     {
-        n_reg = symb->value;
+        n_reg = strdup(symb->value);
     }
 
     if (right->children_size == 0)
@@ -181,260 +220,141 @@ int generate_assignment(function *func, ast_node *left, ast_node *right)
     }
     else if (right->children_size == 2)
     {
-        char *operand_1 = NULL;
-        char *operand_2 = NULL;
-        int n_op1 = 0;
-        int n_op2 = 0;
-        for (int i = 0; i < right->children_size; i++)
-        {
-            ast_node *operand = right->children[i];
-            if (operand->node_type == node_name)
-            {
-                symbol *r_symb = function_lookup(func, operand->val);
-                if (i == 0)
-                    operand_1 = r_symb->value;
-                else if (i == 1)
-                    operand_2 = r_symb->value;
-            }
-            else if (operand->node_type == node_integer)
-            {
-                if (i == 0)
-                {
-                    operand_1 = new_temp();
-                    snprintf(instruction, INSTRUCTION_LENGTH, "addi %s, $0, %s\n", operand_1, operand->val);
-                    append_code(mips_code, instruction);
-                    n_op1 = 1;
-                }
-                else if (i == 1)
-                {
-                    operand_2 = new_temp();
-                    snprintf(instruction, INSTRUCTION_LENGTH, "addi %s, $0, %s\n", operand_2, operand->val);
-                    append_code(mips_code, instruction);
-                    n_op2 = 1;
-                }
-            }
-        }
+        operands *ops = get_operands(func, right);
         switch (right->node_type)
         {
         case node_plus:
-            snprintf(instruction, INSTRUCTION_LENGTH, "add %s, %s, %s\n", n_reg, operand_1, operand_2);
+            snprintf(instruction, INSTRUCTION_LENGTH, "add %s, %s, %s\n", n_reg, ops->operand_1, ops->operand_2);
             break;
         case node_minus:
-            snprintf(instruction, INSTRUCTION_LENGTH, "sub %s, %s, %s\n", n_reg, operand_1, operand_2);
+            snprintf(instruction, INSTRUCTION_LENGTH, "sub %s, %s, %s\n", n_reg, ops->operand_1, ops->operand_2);
             break;
         case node_mul:
-            snprintf(instruction, INSTRUCTION_LENGTH, "mult %s, %s\n", operand_1, operand_2);
+            snprintf(instruction, INSTRUCTION_LENGTH, "mult %s, %s\n", ops->operand_1, ops->operand_2);
             append_code(mips_code, instruction);
             snprintf(instruction, INSTRUCTION_LENGTH, "mflo %s\n", n_reg);
             break;
         case node_div:
-            snprintf(instruction, INSTRUCTION_LENGTH, "div %s, %s\n", operand_1, operand_2);
+            snprintf(instruction, INSTRUCTION_LENGTH, "div %s, %s\n", ops->operand_1, ops->operand_2);
             append_code(mips_code, instruction);
             snprintf(instruction, INSTRUCTION_LENGTH, "mflo %s\n", n_reg);
             break;
         case node_mod:
-            snprintf(instruction, INSTRUCTION_LENGTH, "div %s, %s\n", operand_1, operand_2);
+            snprintf(instruction, INSTRUCTION_LENGTH, "div %s, %s\n", ops->operand_1, ops->operand_2);
             append_code(mips_code, instruction);
             snprintf(instruction, INSTRUCTION_LENGTH, "mfhi %s\n", n_reg);
         default:
             break;
         }
         append_code(mips_code, instruction);
-
-        if (n_op1)
-            free(operand_1);
-
-        if (n_op2)
-            free(operand_2);
+        free(ops);
     }
-    if (new_reg)
-        free(n_reg);
+    free(n_reg);
     return 1;
 }
 
-// NEED TO REFACTOR BELOW ASAP ;)
-
-int generate_if_while(function *func, ast_node *condition, ast_node *statements, int if_while)
+condition *get_condition(function *func, ast_node *cond)
 {
-    if (func == NULL || condition == NULL)
-        return -1;
-
-    char instruction[INSTRUCTION_LENGTH];
-
-    char *operand_1 = NULL;
-    char *operand_2 = NULL;
-    int n_op1 = 0;
-    int n_op2 = 0;
-    for (int i = 0; i < condition->children_size; i++)
-    {
-        ast_node *operand = condition->children[i];
-        if (operand->node_type == node_name)
-        {
-            symbol *r_symb = function_lookup(func, operand->val);
-            if (i == 0)
-                operand_1 = r_symb->value;
-            else if (i == 1)
-                operand_2 = r_symb->value;
-        }
-        else if (operand->node_type == node_integer)
-        {
-            if (i == 0)
-            {
-                operand_1 = new_temp();
-                snprintf(instruction, INSTRUCTION_LENGTH, "addi %s, $0, %s\n", operand_1, operand->val);
-                append_code(mips_code, instruction);
-                n_op1 = 1;
-            }
-            else if (i == 1)
-            {
-                operand_2 = new_temp();
-                snprintf(instruction, INSTRUCTION_LENGTH, "addi %s, $0, %s\n", operand_2, operand->val);
-                append_code(mips_code, instruction);
-                n_op2 = 1;
-            }
-        }
-    }
-
-    char *while_label;
-
-    if (if_while == node_while)
-    {
-        while_label = new_label();
-        snprintf(instruction, INSTRUCTION_LENGTH, "%s_start:\n", while_label);
-        append_code(mips_code, instruction);
-    }
-
-    char *exit_label = new_label();
-
-    switch (condition->node_type)
+    operands *ops = get_operands(func, cond);
+    condition *condi = (condition *)malloc(sizeof(condition));
+    condi->ops = ops;
+    switch (cond->node_type)
     {
     case node_gt:
-        snprintf(instruction, INSTRUCTION_LENGTH, "ble");
+        snprintf(condi->keyword, 4, "ble");
         break;
     case node_ge:
-        snprintf(instruction, INSTRUCTION_LENGTH, "blt");
+        snprintf(condi->keyword, 4, "blt");
         break;
     case node_lt:
-        snprintf(instruction, INSTRUCTION_LENGTH, "bge");
+        snprintf(condi->keyword, 4, "bge");
         break;
     case node_le:
-        snprintf(instruction, INSTRUCTION_LENGTH, "bgt");
+        snprintf(condi->keyword, 4, "bgt");
         break;
     case node_ee:
-        snprintf(instruction, INSTRUCTION_LENGTH, "bne");
+        snprintf(condi->keyword, 4, "bne");
         break;
     case node_ne:
-        snprintf(instruction, INSTRUCTION_LENGTH, "beq");
+        snprintf(condi->keyword, 4, "beq");
         break;
     default:
         break;
     }
+    return condi;
+}
 
+int generate_while(function *func, ast_node *cond, ast_node *statements)
+{
+    if (func == NULL || cond == NULL)
+        return -1;
+
+    char *exit_label = new_label();
+    char *while_label = new_label();
+
+    condition *condi = get_condition(func, cond);
+
+    snprintf(instruction, INSTRUCTION_LENGTH, "%s_start:\n", while_label);
     append_code(mips_code, instruction);
-    snprintf(instruction, INSTRUCTION_LENGTH, " %s, %s, %s\n", operand_1, operand_2, exit_label);
+
+    snprintf(instruction, INSTRUCTION_LENGTH, "%s %s, %s, %s\n", condi->keyword, condi->ops->operand_1, condi->ops->operand_2, exit_label);
     append_code(mips_code, instruction);
-
-    if (n_op1)
-        free(operand_1);
-
-    if (n_op2)
-        free(operand_2);
 
     for (int i = 0; i < statements->children_size; i++)
     {
         generate_statement(func, statements->children[i]);
     }
-    if (if_while == node_while)
-    {
-        snprintf(instruction, INSTRUCTION_LENGTH, "j %s_start\n", while_label);
-        append_code(mips_code, instruction);
-        free(while_label);
-    }
+
+    snprintf(instruction, INSTRUCTION_LENGTH, "j %s_start\n", while_label);
+    append_code(mips_code, instruction);
+
     snprintf(instruction, INSTRUCTION_LENGTH, "%s:\n", exit_label);
     append_code(mips_code, instruction);
 
+    free(condi->ops);
+    free(condi);
+    free(while_label);
     free(exit_label);
     return 1;
 }
 
-
-int generate_if_else(function* func, ast_node* condition, ast_node* if_statements, ast_node* else_statements)
+int generate_if(function *func, ast_node *cond, ast_node *statements)
 {
-    if (func == NULL || condition == NULL)
+    if (func == NULL || cond == NULL)
         return -1;
 
-    char instruction[INSTRUCTION_LENGTH];
+    char *exit_label = new_label();
+    condition *condi = get_condition(func, cond);
 
-    char *operand_1 = NULL;
-    char *operand_2 = NULL;
-    int n_op1 = 0;
-    int n_op2 = 0;
-    for (int i = 0; i < condition->children_size; i++)
+    snprintf(instruction, INSTRUCTION_LENGTH, "%s %s, %s, %s\n", condi->keyword, condi->ops->operand_1, condi->ops->operand_2, exit_label);
+    append_code(mips_code, instruction);
+
+    for (int i = 0; i < statements->children_size; i++)
     {
-        ast_node *operand = condition->children[i];
-        if (operand->node_type == node_name)
-        {
-            symbol *r_symb = function_lookup(func, operand->val);
-            if (i == 0)
-                operand_1 = r_symb->value;
-            else if (i == 1)
-                operand_2 = r_symb->value;
-        }
-        else if (operand->node_type == node_integer)
-        {
-            if (i == 0)
-            {
-                operand_1 = new_temp();
-                snprintf(instruction, INSTRUCTION_LENGTH, "addi %s, $0, %s\n", operand_1, operand->val);
-                append_code(mips_code, instruction);
-                n_op1 = 1;
-            }
-            else if (i == 1)
-            {
-                operand_2 = new_temp();
-                snprintf(instruction, INSTRUCTION_LENGTH, "addi %s, $0, %s\n", operand_2, operand->val);
-                append_code(mips_code, instruction);
-                n_op2 = 1;
-            }
-        }
+        generate_statement(func, statements->children[i]);
     }
+
+    snprintf(instruction, INSTRUCTION_LENGTH, "%s:\n", exit_label);
+    append_code(mips_code, instruction);
+
+    free(condi->ops);
+    free(condi);
+    free(exit_label);
+    return 1;
+}
+
+int generate_if_else(function *func, ast_node *cond, ast_node *if_statements, ast_node *else_statements)
+{
+    if (func == NULL || cond == NULL)
+        return -1;
 
     char *else_label = new_label();
     char *exit_label = new_label();
 
-    switch (condition->node_type)
-    {
-    case node_gt:
-        snprintf(instruction, INSTRUCTION_LENGTH, "ble");
-        break;
-    case node_ge:
-        snprintf(instruction, INSTRUCTION_LENGTH, "blt");
-        break;
-    case node_lt:
-        snprintf(instruction, INSTRUCTION_LENGTH, "bge");
-        break;
-    case node_le:
-        snprintf(instruction, INSTRUCTION_LENGTH, "bgt");
-        break;
-    case node_ee:
-        snprintf(instruction, INSTRUCTION_LENGTH, "bne");
-        break;
-    case node_ne:
-        snprintf(instruction, INSTRUCTION_LENGTH, "beq");
-        break;
-    default:
-        break;
-    }
+    condition *condi = get_condition(func, cond);
 
+    snprintf(instruction, INSTRUCTION_LENGTH, "%s %s, %s, %s\n", condi->keyword, condi->ops->operand_1, condi->ops->operand_2, else_label);
     append_code(mips_code, instruction);
-    snprintf(instruction, INSTRUCTION_LENGTH, " %s, %s, %s\n", operand_1, operand_2, else_label);
-    append_code(mips_code, instruction);
-
-    if (n_op1)
-        free(operand_1);
-
-    if (n_op2)
-        free(operand_2);
 
     for (int i = 0; i < if_statements->children_size; i++)
     {
@@ -444,7 +364,6 @@ int generate_if_else(function* func, ast_node* condition, ast_node* if_statement
     snprintf(instruction, INSTRUCTION_LENGTH, "j %s\n%s:\n", exit_label, else_label);
     append_code(mips_code, instruction);
 
-
     for (int i = 0; i < else_statements->children_size; i++)
     {
         generate_statement(func, else_statements->children[i]);
@@ -453,6 +372,8 @@ int generate_if_else(function* func, ast_node* condition, ast_node* if_statement
     snprintf(instruction, INSTRUCTION_LENGTH, "%s:\n", exit_label);
     append_code(mips_code, instruction);
 
+    free(condi->ops);
+    free(condi);
     free(else_label);
     free(exit_label);
     return 1;
@@ -460,7 +381,6 @@ int generate_if_else(function* func, ast_node* condition, ast_node* if_statement
 
 int generate_function_call(function *func, ast_node *func_call)
 {
-    char instruction[INSTRUCTION_LENGTH];
     for (int i = 0; i < func_call->children[0]->children_size; i++)
     {
         ast_node *argument = func_call->children[0]->children[i];
@@ -482,7 +402,6 @@ int generate_function_call(function *func, ast_node *func_call)
 
 int generate_print_function()
 {
-    char instruction[INSTRUCTION_LENGTH];
     snprintf(instruction, INSTRUCTION_LENGTH, "print:\nli $v0, 1\nsyscall\naddi $a0, $0, 0xA\naddi $v0, $0, 0xB\nsyscall\njr $ra\n");
     append_code(mips_code, instruction);
     return 1;

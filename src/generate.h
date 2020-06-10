@@ -10,6 +10,23 @@
 #define LABEL_LENGTH 10
 #define INSTRUCTION_LENGTH 80
 
+
+struct operands
+{
+    char* operand_1;
+    char* operand_2;
+};
+
+typedef struct operands operands;
+
+struct condition
+{
+    char keyword[4];
+    operands* ops;
+};
+
+typedef struct condition condition;
+
 struct code
 {
     char* inst_code;
@@ -33,8 +50,13 @@ int generate_code(ast_node*);
 int generate_function(function*, ast_node*);
 int generate_statement(function*, ast_node*);
 int generate_assignment(function*, ast_node*, ast_node*);
-int generate_if_while(function*, ast_node*, ast_node*, int);
+
+operands* get_operands(function*, ast_node*);
+condition* get_condition(function*, ast_node*);
+int generate_while(function*, ast_node*, ast_node*);
+int generate_if(function*, ast_node*, ast_node*);
 int generate_if_else(function*, ast_node*, ast_node*, ast_node*);
+
 int generate_function_call(function*, ast_node*);
 
 int generate_print_function();
