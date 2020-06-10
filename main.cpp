@@ -5,6 +5,7 @@
 #include <QtWidgets/QTextEdit>
 #include <QtWidgets/QLayout>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QLabel>
 
 extern "C"
 {
@@ -31,6 +32,9 @@ private:
     QTextEdit *source_code;
     QTextEdit *compiled_code;
     QTextEdit *err_code;
+    QLabel *label_source_code;
+    QLabel *label_compiled_code;
+    QLabel *label_err_code;
 
 public:
     App(int argc, char *argv[]) : QApplication(argc, argv)
@@ -41,15 +45,27 @@ public:
         compiled_code = new QTextEdit(window);
         err_code = new QTextEdit(window);
 
+        label_source_code = new QLabel(window);
+        label_source_code->setText("Source Code");
+        label_source_code->setGeometry(150, 0, 100, 50);
+
+        label_compiled_code = new QLabel(window);
+        label_compiled_code->setText("Compiled Code");
+        label_compiled_code->setGeometry(550, 0, 100, 50);
+
+        label_err_code = new QLabel(window);
+        label_err_code->setText("Error Code");
+        label_err_code->setGeometry(50, 350, 100, 50);
+
         run->setText("Run");
-        run->setGeometry(350, 100, 100, 70);
+        run->setGeometry(350, 150, 100, 70);
 
-        source_code->setGeometry(50, 0, 300, 300);
+        source_code->setGeometry(50, 50, 300, 300);
 
-        compiled_code->setGeometry(450, 0, 300, 300);
+        compiled_code->setGeometry(450, 50, 300, 300);
         compiled_code->setReadOnly(true);
 
-        err_code->setGeometry(0, 350, 800, 300);
+        err_code->setGeometry(0, 400, 800, 300);
         err_code->setTextColor(QColor(255, 0, 0));
         err_code->setReadOnly(true);
 
@@ -107,6 +123,9 @@ public:
         clear_df(dfs);
         clear_code(mips_code);
         clear_code(error_code);
+        delete label_source_code;
+        delete label_compiled_code;
+        delete label_err_code;
         delete run;
         delete source_code;
         delete err_code;
