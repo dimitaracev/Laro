@@ -6,24 +6,38 @@
 
 function* create_function(char* name)
 {
-    function* proc = (function*)malloc(sizeof(function));
-    proc->name = strdup(name);
-    proc->st = create_symbol_table();
-    return proc;
+    function* func = (function*)malloc(sizeof(function));
+    func->name = strdup(name);
+    func->st = create_symbol_table();
+    return func;
 }
 
-symbol* function_lookup(function* proc, char* key)
+int copy_function(function* from_func, function* to_func)
 {
-    if(proc == NULL || key == NULL)
+    if(from_func == NULL || to_func == NULL)
+        return 0;
+    
+    for(int i = 0; i < from_func->st->size; i++)
+    {
+        symbol* symb = from_func->st->symbols[i];
+        function_insert(to_func, symb->key, symb->value);
+    }
+    return 1;
+}
+
+
+symbol* function_lookup(function* func, char* key)
+{
+    if(func == NULL || key == NULL)
         return NULL;
     
-    return lookup(proc->st, key);
+    return lookup(func->st, key);
 }
 
-int function_insert(function* proc, char* key, char* value)
+int function_insert(function* func, char* key, char* value)
 {
-    if(proc == NULL || key == NULL || value == NULL)
+    if(func == NULL || key == NULL || value == NULL)
         return -1;
     
-    return insert(proc->st, key, value);
+    return insert(func->st, key, value);
 }

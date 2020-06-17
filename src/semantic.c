@@ -66,7 +66,8 @@ int semantic_function(function *func, ast_node *node)
         break;
     case node_if:
     case node_while:
-        semantic_if_while(func, node->children[0]);
+        semantic_if_else_while(func, node);
+        return 1;
         break;
     case node_function_call:
         semantic_function_call(func, node);
@@ -113,7 +114,7 @@ int semantic_function_call(function *func, ast_node *func_call)
             {
                 if (!function_lookup(func, param->val))
                 {
-                    snprintf(instruction, INSTRUCTION_LENGTH, "Parameter %s in function %s is used before it is declared.\n", param->val, func->name);
+                    snprintf(instruction, INSTRUCTION_LENGTH, "Parameter %s in function %s is used before it is declared.\n", param->val, func_call->val);
                     append_code(error_code, instruction);
                 }
             }
@@ -156,12 +157,15 @@ int semantic_assignment(function *func, ast_node *left, ast_node *right)
     return 1;
 }
 
-int semantic_if_while(function *func, ast_node *condition)
+int semantic_if_else_while(function *func, ast_node *iew)
 {
-    if (condition == NULL)
+    if (iew == NULL)
         return -1;
 
     char instruction[INSTRUCTION_LENGTH];
+    function* scope = create_function("if_else_while");
+    copy_function(func, scope);
+    ast_node* condition = iew->children[0];
     for (int i = 0; i < condition->children_size; i++)
     {
         ast_node *operand = condition->children[i];
@@ -169,10 +173,18 @@ int semantic_if_while(function *func, ast_node *condition)
         {
             if (!function_lookup(func, operand->val))
             {
-                snprintf(instruction, INSTRUCTION_LENGTH, "Variable %s in function %s is used before it is declared.\n", operand->val, func->name);
+                snprintf(instruction, INSTRUCTION_LENGTH, "Operand %s in condition (function %s), is used before it is declared.\n", operand->val, func->name);
                 append_code(error_code, instruction);
             }
         }
     }
+
+    for(int i = 0; i < iew->children[1]->children_size; i++)
+    {
+        semantic_function(scope, iew->children[1]->children[i]);
+    }
+
+    clear_symbol_table(scope->st);
+    free(scope);
     return 1;
 }

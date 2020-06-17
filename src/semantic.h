@@ -21,7 +21,7 @@ int clear_df(declared_functions*);
 
 int semantic(ast_node*);
 int semantic_function(function*, ast_node*);
-int semantic_if_while(function*, ast_node*);
+int semantic_if_else_while(function*, ast_node*);
 int semantic_assignment(function*, ast_node*, ast_node*);
 int semantic_function_call(function*, ast_node*);
 

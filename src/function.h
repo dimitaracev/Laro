@@ -11,6 +11,7 @@ struct function {
 typedef struct function function;
 
 function* create_function(char*);
+int copy_function(function*, function*);
 
 symbol* function_lookup(function*, char*);
 int function_insert(function*, char*, char*);

@@ -98,26 +98,26 @@ int generate_function(function *func, ast_node *node)
     }
 
     int func_pointer = stack_pointer;
-    
+
     snprintf(instruction, INSTRUCTION_LENGTH, "addi $sp, $sp, -4\n");
     append_code(mips_code, instruction);
-    
+
     snprintf(instruction, INSTRUCTION_LENGTH, "sw $ra, %d($sp)\n", stack_pointer);
     append_code(mips_code, instruction);
-    
+
     stack_pointer += 4;
 
     for (int i = 0; i < node->children[1]->children_size; i++)
     {
         generate_statement(func, node->children[1]->children[i]);
     }
-    
+
     snprintf(instruction, INSTRUCTION_LENGTH, "lw $ra, %d($sp)\n", func_pointer);
     append_code(mips_code, instruction);
-    
+
     snprintf(instruction, INSTRUCTION_LENGTH, "addi $sp, $sp, 4\njr $ra\n");
     append_code(mips_code, instruction);
-    
+
     stack_pointer -= 4;
     return 1;
 }
@@ -325,7 +325,6 @@ int generate_if(function *func, ast_node *cond, ast_node *statements)
 
     char *exit_label = new_label();
     condition *condi = get_condition(func, cond);
-
     snprintf(instruction, INSTRUCTION_LENGTH, "%s %s, %s, %s\n", condi->keyword, condi->ops->operand_1, condi->ops->operand_2, exit_label);
     append_code(mips_code, instruction);
 

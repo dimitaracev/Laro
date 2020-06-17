@@ -80,8 +80,8 @@ public:
 
             root = create_ast_node();
 
-            std::string l = source_code->toPlainText().toStdString();
-            yy_scan_bytes(l.c_str(), l.length());
+            std::string s_code = source_code->toPlainText().toStdString();
+            yy_scan_bytes(s_code.c_str(), s_code.length());
             yyparse();
 
             if (mips_code != NULL)
