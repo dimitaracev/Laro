@@ -6,14 +6,12 @@ Laro is a programming language for working with numbers that compiles down to MI
 qmake
 make
 git
-
 ```
 ## Build
 ```
 git clone https://github.com/dimitaracev/Laro.git
 cd Laro
 qmake && make
-
 ```
 ## Usage
 
@@ -28,7 +26,6 @@ func main()
 {
 
 }
-
 ```
 
 Arithmetic operations supported by Laro: +, -, *, /, %.
@@ -56,7 +53,6 @@ func even(x)
         print(x)
     }
 }
-
 ```
 
 
