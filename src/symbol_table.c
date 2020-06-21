@@ -8,20 +8,35 @@ symbol_table *create_symbol_table()
 {
     symbol_table *st = (symbol_table *)malloc(sizeof(symbol_table));
     st->size = 0;
+    for (int i = 0; i < CAPACITY; i++)
+    {
+        st->symbols[i] = NULL;
+    }
     return st;
 }
 
-int clear_symbol_table(symbol_table* st)
+int hash_code(char *key)
 {
-    for(int i = 0; i < st->size; i++)
+    int hash = 9901;
+    while (*key)
     {
-        free(st->symbols[i]);
+        hash = ((hash << 13) ^ *key++) % CAPACITY;
+    }
+    return hash;
+}
+
+int clear_symbol_table(symbol_table *st)
+{
+    for (int i = 0; i < CAPACITY; i++)
+    {
+        if (st->symbols[i] != NULL)
+            free(st->symbols[i]);
     }
     free(st);
     return 1;
 }
 
-int insert(symbol_table *st, char *key, char* value)
+int insert(symbol_table *st, char *key, char *value)
 {
     if (st == NULL || key == NULL)
         return -1;
@@ -29,18 +44,11 @@ int insert(symbol_table *st, char *key, char* value)
     symbol *s = (symbol *)malloc(sizeof(symbol));
     s->key = strdup(key);
     s->value = strdup(value);
-    st->symbols[st->size++] = s;
+    st->symbols[hash_code(key)] = s;
     return 1;
 }
 
 symbol *lookup(symbol_table *st, char *key)
 {
-    for(int i = 0; i < st->size; i++)
-    {
-        if(strcmp(st->symbols[i]->key, key) == 0)
-        {
-            return st->symbols[i];
-        }
-    }
-    return NULL;
+    return st->symbols[hash_code(key)];
 }

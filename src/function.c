@@ -17,10 +17,13 @@ int copy_function(function* from_func, function* to_func)
     if(from_func == NULL || to_func == NULL)
         return 0;
     
-    for(int i = 0; i < from_func->st->size; i++)
+    for(int i = 0; i < CAPACITY; i++)
     {
-        symbol* symb = from_func->st->symbols[i];
-        function_insert(to_func, symb->key, symb->value);
+        if(from_func->st->symbols[i] != NULL)
+        {
+            symbol* symb = from_func->st->symbols[i];
+            function_insert(to_func, symb->key, symb->value);
+        }
     }
     return 1;
 }
