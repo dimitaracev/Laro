@@ -15,9 +15,9 @@ extern "C"
 #include "src/generate.h"
 #include "src/semantic.h"
     extern ast_node *root;
-    extern code *mips_code;
-    extern code *error_code;
-    extern declared_functions *dfs;
+    code *mips_code;
+    code *error_code;
+    declared_functions *dfs;
     extern int current_label_count;
     extern int current_register_count;
     extern int current_temporary_register_count;
@@ -98,11 +98,11 @@ public:
 
             dfs = create_df();
 
-            semantic(root);
+            semantic(error_code, dfs, root);
 
             if (error_code->characters == 0)
             {
-                generate_code(root);
+                generate_code(mips_code, root);
                 compiled_code->setText(mips_code->inst_code);
                 err_code->setText("");
             }

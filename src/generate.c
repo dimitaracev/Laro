@@ -60,7 +60,7 @@ int clear_code(code *s_code)
     return 1;
 }
 
-int generate_code(ast_node *root)
+int generate_code(code* mips_code, ast_node *root)
 {
     if (root == NULL)
         return -1;
@@ -71,15 +71,15 @@ int generate_code(ast_node *root)
     for (int i = 0; i < root->children_size; i++)
     {
         function *func = create_function(root->children[i]->val);
-        generate_function(func, root->children[i]);
+        generate_function(mips_code, func, root->children[i]);
         clear_symbol_table(func->st);
         free(func);
     }
-    generate_print_function();
+    generate_print_function(mips_code);
     return 1;
 }
 
-int generate_function(function *func, ast_node *node)
+int generate_function(code* mips_code, function *func, ast_node *node)
 {
     if (node == NULL)
         return 1;
@@ -109,7 +109,7 @@ int generate_function(function *func, ast_node *node)
 
     for (int i = 0; i < node->children[1]->children_size; i++)
     {
-        generate_statement(func, node->children[1]->children[i]);
+        generate_statement(mips_code, func, node->children[1]->children[i]);
     }
 
     snprintf(instruction, INSTRUCTION_LENGTH, "lw $ra, %d($sp)\n", func_pointer);
@@ -122,7 +122,7 @@ int generate_function(function *func, ast_node *node)
     return 1;
 }
 
-int generate_statement(function *func, ast_node *node)
+int generate_statement(code* mips_code, function *func, ast_node *node)
 {
     if (node == NULL)
         return 1;
@@ -130,34 +130,34 @@ int generate_statement(function *func, ast_node *node)
     switch (node->node_type)
     {
     case node_assignment:
-        generate_assignment(func, node->children[0], node->children[1]);
+        generate_assignment(mips_code, func, node->children[0], node->children[1]);
         return 1;
         break;
     case node_if:
-        generate_if(func, node->children[0], node->children[1]);
+        generate_if(mips_code, func, node->children[0], node->children[1]);
         return 1;
     case node_while:
-        generate_while(func, node->children[0], node->children[1]);
+        generate_while(mips_code, func, node->children[0], node->children[1]);
         return 1;
         break;
     case node_if_else:
-        generate_if_else(func, node->children[0], node->children[1], node->children[2]);
+        generate_if_else(mips_code, func, node->children[0], node->children[1], node->children[2]);
         return 1;
         break;
     case node_function_call:
-        generate_function_call(func, node);
+        generate_function_call(mips_code, func, node);
         break;
     default:
         break;
     }
     for (int i = 0; i < node->children_size; i++)
     {
-        generate_statement(func, node->children[i]);
+        generate_statement(mips_code, func, node->children[i]);
     }
     return 1;
 }
 
-operands *get_operands(function *func, ast_node *node)
+operands *get_operands(code* mips_code, function *func, ast_node *node)
 {
     operands *ops = (operands *)malloc(sizeof(operands));
     for (int i = 0; i < node->children_size; i++)
@@ -190,7 +190,7 @@ operands *get_operands(function *func, ast_node *node)
     return ops;
 }
 
-int generate_assignment(function *func, ast_node *left, ast_node *right)
+int generate_assignment(code* mips_code, function *func, ast_node *left, ast_node *right)
 {
     symbol *symb = function_lookup(func, left->val);
     char *n_reg = NULL;
@@ -220,7 +220,7 @@ int generate_assignment(function *func, ast_node *left, ast_node *right)
     }
     else if (right->children_size == 2)
     {
-        operands *ops = get_operands(func, right);
+        operands *ops = get_operands(mips_code, func, right);
         switch (right->node_type)
         {
         case node_plus:
@@ -253,9 +253,9 @@ int generate_assignment(function *func, ast_node *left, ast_node *right)
     return 1;
 }
 
-condition *get_condition(function *func, ast_node *cond)
+condition *get_condition(code* mips_code, function *func, ast_node *cond)
 {
-    operands *ops = get_operands(func, cond);
+    operands *ops = get_operands(mips_code, func, cond);
     condition *condi = (condition *)malloc(sizeof(condition));
     condi->ops = ops;
     switch (cond->node_type)
@@ -284,7 +284,7 @@ condition *get_condition(function *func, ast_node *cond)
     return condi;
 }
 
-int generate_while(function *func, ast_node *cond, ast_node *statements)
+int generate_while(code* mips_code, function *func, ast_node *cond, ast_node *statements)
 {
     if (func == NULL || cond == NULL)
         return -1;
@@ -292,7 +292,7 @@ int generate_while(function *func, ast_node *cond, ast_node *statements)
     char *exit_label = new_label();
     char *while_label = new_label();
 
-    condition *condi = get_condition(func, cond);
+    condition *condi = get_condition(mips_code, func, cond);
 
     snprintf(instruction, INSTRUCTION_LENGTH, "%s_start:\n", while_label);
     append_code(mips_code, instruction);
@@ -302,7 +302,7 @@ int generate_while(function *func, ast_node *cond, ast_node *statements)
 
     for (int i = 0; i < statements->children_size; i++)
     {
-        generate_statement(func, statements->children[i]);
+        generate_statement(mips_code, func, statements->children[i]);
     }
 
     snprintf(instruction, INSTRUCTION_LENGTH, "j %s_start\n", while_label);
@@ -318,19 +318,19 @@ int generate_while(function *func, ast_node *cond, ast_node *statements)
     return 1;
 }
 
-int generate_if(function *func, ast_node *cond, ast_node *statements)
+int generate_if(code* mips_code, function *func, ast_node *cond, ast_node *statements)
 {
     if (func == NULL || cond == NULL)
         return -1;
 
     char *exit_label = new_label();
-    condition *condi = get_condition(func, cond);
+    condition *condi = get_condition(mips_code, func, cond);
     snprintf(instruction, INSTRUCTION_LENGTH, "%s %s, %s, %s\n", condi->keyword, condi->ops->operand_1, condi->ops->operand_2, exit_label);
     append_code(mips_code, instruction);
 
     for (int i = 0; i < statements->children_size; i++)
     {
-        generate_statement(func, statements->children[i]);
+        generate_statement(mips_code, func, statements->children[i]);
     }
 
     snprintf(instruction, INSTRUCTION_LENGTH, "%s:\n", exit_label);
@@ -342,7 +342,7 @@ int generate_if(function *func, ast_node *cond, ast_node *statements)
     return 1;
 }
 
-int generate_if_else(function *func, ast_node *cond, ast_node *if_statements, ast_node *else_statements)
+int generate_if_else(code* mips_code, function *func, ast_node *cond, ast_node *if_statements, ast_node *else_statements)
 {
     if (func == NULL || cond == NULL)
         return -1;
@@ -350,14 +350,14 @@ int generate_if_else(function *func, ast_node *cond, ast_node *if_statements, as
     char *else_label = new_label();
     char *exit_label = new_label();
 
-    condition *condi = get_condition(func, cond);
+    condition *condi = get_condition(mips_code, func, cond);
 
     snprintf(instruction, INSTRUCTION_LENGTH, "%s %s, %s, %s\n", condi->keyword, condi->ops->operand_1, condi->ops->operand_2, else_label);
     append_code(mips_code, instruction);
 
     for (int i = 0; i < if_statements->children_size; i++)
     {
-        generate_statement(func, if_statements->children[i]);
+        generate_statement(mips_code, func, if_statements->children[i]);
     }
 
     snprintf(instruction, INSTRUCTION_LENGTH, "j %s\n%s:\n", exit_label, else_label);
@@ -365,7 +365,7 @@ int generate_if_else(function *func, ast_node *cond, ast_node *if_statements, as
 
     for (int i = 0; i < else_statements->children_size; i++)
     {
-        generate_statement(func, else_statements->children[i]);
+        generate_statement(mips_code, func, else_statements->children[i]);
     }
 
     snprintf(instruction, INSTRUCTION_LENGTH, "%s:\n", exit_label);
@@ -378,7 +378,7 @@ int generate_if_else(function *func, ast_node *cond, ast_node *if_statements, as
     return 1;
 }
 
-int generate_function_call(function *func, ast_node *func_call)
+int generate_function_call(code* mips_code, function *func, ast_node *func_call)
 {
     for (int i = 0; i < func_call->children[0]->children_size; i++)
     {
@@ -399,7 +399,7 @@ int generate_function_call(function *func, ast_node *func_call)
     return 1;
 }
 
-int generate_print_function()
+int generate_print_function(code* mips_code)
 {
     snprintf(instruction, INSTRUCTION_LENGTH, "print:\nli $v0, 1\nsyscall\naddi $a0, $0, 0xA\naddi $v0, $0, 0xB\nsyscall\njr $ra\n");
     append_code(mips_code, instruction);

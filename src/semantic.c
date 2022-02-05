@@ -18,7 +18,7 @@ int clear_df(declared_functions *df)
     return 1;
 }
 
-int semantic(ast_node *root)
+int semantic(code* error_code, declared_functions *dfs, ast_node *root)
 {
     if (root == NULL)
         return -1;
@@ -50,27 +50,27 @@ int semantic(ast_node *root)
     for (int i = 0; i < root->children_size; i++)
     {
         function *func = create_function(root->children[i]->val);
-        semantic_function(func, root->children[i]);
+        semantic_function(error_code, dfs, func, root->children[i]);
         clear_symbol_table(func->st);
         free(func);
     }
     return 1;
 }
 
-int semantic_function(function *func, ast_node *node)
+int semantic_function(code* error_code, declared_functions *dfs, function *func, ast_node *node)
 {
     switch (node->node_type)
     {
     case node_assignment:
-        semantic_assignment(func, node->children[0], node->children[1]);
+        semantic_assignment(error_code, func, node->children[0], node->children[1]);
         break;
     case node_if:
     case node_while:
-        semantic_if_else_while(func, node);
+        semantic_if_else_while(error_code, dfs, func, node);
         return 1;
         break;
     case node_function_call:
-        semantic_function_call(func, node);
+        semantic_function_call(error_code, dfs, func, node);
         break;
     case node_function:
         for (int i = 0; i < node->children[0]->children_size; i++)
@@ -83,12 +83,12 @@ int semantic_function(function *func, ast_node *node)
     }
     for (int i = 0; i < node->children_size; i++)
     {
-        semantic_function(func, node->children[i]);
+        semantic_function(error_code, dfs, func, node->children[i]);
     }
     return 1;
 }
 
-int semantic_function_call(function *func, ast_node *func_call)
+int semantic_function_call(code* error_code, declared_functions *dfs, function *func, ast_node *func_call)
 {
     if (func_call == NULL)
         return -1;
@@ -124,7 +124,7 @@ int semantic_function_call(function *func, ast_node *func_call)
     return 1;
 }
 
-int semantic_assignment(function *func, ast_node *left, ast_node *right)
+int semantic_assignment(code* error_code, function *func, ast_node *left, ast_node *right)
 {
     char instruction[INSTRUCTION_LENGTH];
     if (right->children_size == 0)
@@ -157,7 +157,7 @@ int semantic_assignment(function *func, ast_node *left, ast_node *right)
     return 1;
 }
 
-int semantic_if_else_while(function *func, ast_node *iew)
+int semantic_if_else_while(code* error_code, declared_functions *dfs, function *func, ast_node *iew)
 {
     if (iew == NULL)
         return -1;
@@ -181,7 +181,7 @@ int semantic_if_else_while(function *func, ast_node *iew)
 
     for(int i = 0; i < iew->children[1]->children_size; i++)
     {
-        semantic_function(scope, iew->children[1]->children[i]);
+        semantic_function(error_code, dfs, scope, iew->children[1]->children[i]);
     }
 
     clear_symbol_table(scope->st);

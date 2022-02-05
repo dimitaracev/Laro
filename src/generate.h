@@ -35,9 +35,6 @@ struct code
 
 typedef struct code code;
 
-code* mips_code;
-code* error_code;
-
 code* new_code();
 int append_code(code*, char*);
 int clear_code(code*);
@@ -46,18 +43,18 @@ char* new_register();
 char* new_temp();
 char* new_label();
 
-int generate_code(ast_node*);
-int generate_function(function*, ast_node*);
-int generate_statement(function*, ast_node*);
-int generate_assignment(function*, ast_node*, ast_node*);
+int generate_code(code*, ast_node*);
+int generate_function(code*, function*, ast_node*);
+int generate_statement(code*, function*, ast_node*);
+int generate_assignment(code*, function*, ast_node*, ast_node*);
 
-operands* get_operands(function*, ast_node*);
-condition* get_condition(function*, ast_node*);
-int generate_while(function*, ast_node*, ast_node*);
-int generate_if(function*, ast_node*, ast_node*);
-int generate_if_else(function*, ast_node*, ast_node*, ast_node*);
+operands* get_operands(code*, function*, ast_node*);
+condition* get_condition(code*, function*, ast_node*);
+int generate_while(code*, function*, ast_node*, ast_node*);
+int generate_if(code*, function*, ast_node*, ast_node*);
+int generate_if_else(code*, function*, ast_node*, ast_node*, ast_node*);
 
-int generate_function_call(function*, ast_node*);
+int generate_function_call(code*, function*, ast_node*);
 
 int generate_print_function();
 
